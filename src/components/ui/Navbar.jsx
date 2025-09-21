@@ -73,16 +73,10 @@ export function NavbarDemo() {
               <NavbarButton
                 onClick={() => setIsMobileMenuOpen(false)}
                 variant="primary"
-                className="w-full">
+                className="w-full"
+                href="/chat">
                 Try Demo
               </NavbarButton>
-              <button
-                onClick={() => document.getElementById('file-input')?.click()}
-                className="px-5 py-3 rounded-2xl bg-white/10 text-white border border-white/20 hover:bg-white/20 transition"
-                aria-label="Choose file"
-              >
-                Choose file
-              </button>
             </div>
           </MobileNavMenu>
         </MobileNav>

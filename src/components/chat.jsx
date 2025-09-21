@@ -275,23 +275,23 @@ export default function Chat() {
       : "text-green-400";
 
   return (
-    <div className="h-screen w-screen bg-black flex">
+    <div className="min-h-screen w-full bg-black flex flex-col lg:flex-row">
       {/* LEFT: upload + analysis */}
-      <div className="w-2/3 p-8 flex flex-col gap-6">
+      <div className="w-full lg:w-2/3 p-4 sm:p-6 lg:p-8 flex flex-col gap-4 lg:gap-6">
         {/* Upload area */}
         <div className="flex-1 flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-2xl p-10 rounded-3xl bg-gradient-to-br from-white/6 to-white/4 backdrop-blur-2xl border border-white/20 shadow-[0_8px_40px_rgba(255,255,255,0.04)]"
+            className="w-full max-w-2xl p-6 sm:p-8 lg:p-10 rounded-3xl bg-gradient-to-br from-white/6 to-white/4 backdrop-blur-2xl border border-white/20 shadow-[0_8px_40px_rgba(255,255,255,0.04)]"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div>
-                <h1 className="text-2xl font-semibold text-white">Upload document</h1>
-                <p className="text-sm text-white/70 mt-1">PDF or TXT — max 2MB. We extract & summarize.</p>
+                <h1 className="text-xl sm:text-2xl font-semibold text-white">Upload document</h1>
+                <p className="text-xs sm:text-sm text-white/70 mt-1">PDF or TXT — max 2MB. We extract & summarize.</p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <input
                   id="file-input"
                   type="file"
@@ -299,14 +299,14 @@ export default function Chat() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <label htmlFor="file-input" className="inline-block">
+                {/* <label htmlFor="file-input" className="inline-block">
                   <button
-                    className="px-5 py-3 rounded-2xl bg-white/10 text-white border border-white/20 hover:bg-white/20 transition"
+                    className="w-full sm:w-auto px-4 sm:px-5 py-3 rounded-2xl bg-white/10 text-white border border-white/20 hover:bg-white/20 transition text-sm"
                     aria-label="Choose file"
                   >
                     Choose file
                   </button>
-                </label>
+                </label> */}
 
                 <button
                   onClick={() => {
@@ -314,7 +314,7 @@ export default function Chat() {
                     const el = document.getElementById("file-input");
                     el?.click();
                   }}
-                  className="px-4 py-3 rounded-2xl bg-white/6 text-white border border-white/10 hover:bg-white/12 transition"
+                  className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white/6 text-white border border-white/10 hover:bg-white/12 transition text-sm"
                 >
                   Upload
                 </button>
@@ -378,14 +378,14 @@ export default function Chat() {
       </div>
 
       {/* RIGHT: Chat */}
-      <div className="w-1/3 p-6 flex flex-col">
+      <div className="w-full lg:w-1/3 p-4 sm:p-6 flex flex-col min-h-[50vh] lg:min-h-screen">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex-1 p-4 rounded-3xl bg-gradient-to-br from-white/6 to-white/4 backdrop-blur-2xl border border-white/20 shadow-[0_10px_50px_rgba(0,0,0,0.6)] overflow-y-auto"
+          className="flex-1 p-4 rounded-3xl bg-gradient-to-br from-white/6 to-white/4 backdrop-blur-2xl border border-white/20 shadow-[0_10px_50px_rgba(0,0,0,0.6)] overflow-y-auto min-h-[300px]"
         >
           <div className="mb-4">
-            <h3 className="text-white font-semibold">Chat — ask about the document</h3>
+            <h3 className="text-white font-semibold text-sm sm:text-base">Chat — ask about the document</h3>
             <p className="text-xs text-white/70">The assistant will answer using the analyzed document context.</p>
           </div>
 
@@ -393,7 +393,7 @@ export default function Chat() {
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`max-w-full p-3 rounded-2xl ${
+                className={`max-w-[85%] sm:max-w-full p-3 rounded-2xl text-sm ${
                   m.role === "user" ? "ml-auto bg-blue-500/90 text-white" : "mr-auto bg-white/10 text-white"
                 }`}
               >
@@ -403,19 +403,19 @@ export default function Chat() {
           </div>
         </motion.div>
 
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder={summaryArr.length ? "Ask something about the document..." : "Upload a document first..."}
-            className="flex-1 px-4 py-3 rounded-2xl bg-white/6 text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            className="flex-1 px-4 py-3 rounded-2xl bg-white/6 text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/30 text-sm"
             disabled={analyzing || summaryArr.length === 0}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || analyzing || summaryArr.length === 0}
-            className="px-4 py-3 rounded-2xl bg-blue-500 text-white font-semibold hover:bg-blue-600 disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-blue-500 text-white font-semibold hover:bg-blue-600 disabled:opacity-50 text-sm"
           >
             Send
           </button>

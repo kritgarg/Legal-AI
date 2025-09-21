@@ -1,6 +1,8 @@
 // src/pages/api/extract.js
 import pdf from "pdf-parse";
 import formidable from "formidable";
+import Tesseract from "tesseract.js";
+import { pdf2pic } from "pdf2pic";
 import fs from "fs";
 import crypto from "crypto";
 
@@ -121,10 +123,48 @@ export default async function handler(req, res) {
     });
 
     let text = (data?.text || "").trim();
+    
+    // If no text found, try OCR for scanned PDFs
     if (!text) {
-      return res.status(400).json({
-        error: "No extractable text found — this looks like a scanned image PDF. For scanned documents you need an OCR-capable processor.",
-      });
+      console.log("No text found, attempting OCR...");
+      try {
+        // Convert PDF to images
+        const convert = pdf2pic.fromBuffer(buffer, {
+          density: 100,
+          saveFilename: "untitled",
+          savePath: "/tmp",
+          format: "png",
+          width: 600,
+          height: 600
+        });
+
+        // Convert first page to image
+        const result = await convert(1, { responseType: "buffer" });
+        
+        // Perform OCR on the image
+        const { data: { text: ocrText } } = await Tesseract.recognize(
+          result.buffer,
+          'eng',
+          {
+            logger: m => console.log(m)
+          }
+        );
+        
+        text = ocrText.trim();
+        
+        if (!text) {
+          return res.status(400).json({
+            error: "No text could be extracted from this document, even with OCR processing.",
+          });
+        }
+        
+        console.log("OCR extraction successful");
+      } catch (ocrError) {
+        console.error("OCR error:", ocrError);
+        return res.status(400).json({
+          error: "No extractable text found and OCR processing failed. Please try a different document.",
+        });
+      }
     }
 
     // truncate and flag if needed
