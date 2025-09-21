@@ -9,7 +9,6 @@ import {
 } from "motion/react";
 
 import React, { useRef, useState } from "react";
-import logo from "@/app/../../public/Logo.svg";
 
 
 export const Navbar = ({
@@ -196,7 +195,7 @@ export const NavbarLogo = () => {
       href="/"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black">
       <img
-        src={logo}
+        src="/Logo.svg"
         alt="logo"
         width={40}
         height={40} />

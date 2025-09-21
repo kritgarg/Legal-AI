@@ -22,10 +22,10 @@ const Footer = () => {
             Privacy
           </a>
           <a
-            href="#"
+            href="/chat"
             className="text-neutral-300 text-lg hover:text-white transition-all duration-300 hover:translate-y-[-4px] hover:scale-110"
           >
-            Contact
+            Chat
           </a>
         </div>
       </div>
