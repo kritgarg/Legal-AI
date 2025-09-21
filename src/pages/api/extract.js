@@ -1,8 +1,6 @@
 // src/pages/api/extract.js
 import pdf from "pdf-parse";
 import formidable from "formidable";
-import Tesseract from "tesseract.js";
-import { pdf2pic } from "pdf2pic";
 import fs from "fs";
 import crypto from "crypto";
 
@@ -116,56 +114,113 @@ export default async function handler(req, res) {
     // read buffer
     const buffer = fs.readFileSync(filePath);
 
-    // extract text
-    const data = await pdf(buffer).catch((e) => {
+    // extract text with multiple methods
+    let text = "";
+    let extractionMethod = "";
+
+    // Method 1: pdf-parse
+    try {
+      const data = await pdf(buffer);
+      text = (data?.text || "").trim();
+      if (text) {
+        extractionMethod = "pdf-parse";
+        console.log(`Extracted ${text.length} characters using pdf-parse`);
+      }
+    } catch (e) {
       console.error("pdf-parse error:", e);
-      return { text: "" };
-    });
-
-    let text = (data?.text || "").trim();
+    }
     
-    // If no text found, try OCR for scanned PDFs
+    // Method 2: pdfjs-dist if pdf-parse failed
     if (!text) {
-      console.log("No text found, attempting OCR...");
+      console.log("Trying pdfjs-dist extraction...");
       try {
-        // Convert PDF to images
-        const convert = pdf2pic.fromBuffer(buffer, {
-          density: 100,
-          saveFilename: "untitled",
-          savePath: "/tmp",
-          format: "png",
-          width: 600,
-          height: 600
-        });
-
-        // Convert first page to image
-        const result = await convert(1, { responseType: "buffer" });
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.js');
         
-        // Perform OCR on the image
-        const { data: { text: ocrText } } = await Tesseract.recognize(
-          result.buffer,
-          'eng',
-          {
-            logger: m => console.log(m)
-          }
-        );
-        
-        text = ocrText.trim();
-        
-        if (!text) {
-          return res.status(400).json({
-            error: "No text could be extracted from this document, even with OCR processing.",
-          });
+        // Configure worker path for serverless
+        if (typeof window === 'undefined') {
+          pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
         }
         
-        console.log("OCR extraction successful");
-      } catch (ocrError) {
-        console.error("OCR error:", ocrError);
-        return res.status(400).json({
-          error: "No extractable text found and OCR processing failed. Please try a different document.",
+        const loadingTask = pdfjs.getDocument({ 
+          data: buffer,
+          useSystemFonts: true,
+          disableFontFace: true
         });
+        const pdfDocument = await loadingTask.promise;
+        
+        let extractedText = '';
+        const numPages = Math.min(pdfDocument.numPages, 5); // Try more pages
+        
+        console.log(`PDF has ${pdfDocument.numPages} pages, extracting from ${numPages} pages`);
+        
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+          try {
+            const page = await pdfDocument.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            
+            // Better text reconstruction
+            const pageText = textContent.items
+              .map(item => {
+                if (item.str && item.str.trim()) {
+                  return item.str;
+                }
+                return '';
+              })
+              .filter(Boolean)
+              .join(' ');
+            
+            if (pageText.trim()) {
+              extractedText += pageText + '\n\n';
+              console.log(`Page ${pageNum}: extracted ${pageText.length} characters`);
+            }
+          } catch (pageError) {
+            console.error(`Error extracting page ${pageNum}:`, pageError);
+          }
+        }
+        
+        text = extractedText.trim();
+        if (text) {
+          extractionMethod = "pdfjs-dist";
+          console.log(`Total extracted ${text.length} characters using pdfjs-dist`);
+        }
+        
+        // Cleanup
+        await pdfDocument.destroy();
+      } catch (altError) {
+        console.error("pdfjs-dist extraction error:", altError);
       }
     }
+    
+    // Method 3: Try raw buffer as text (for some simple PDFs)
+    if (!text) {
+      console.log("Trying raw text extraction...");
+      try {
+        const rawText = buffer.toString('utf8');
+        // Look for readable text patterns
+        const textMatches = rawText.match(/[a-zA-Z\s]{20,}/g);
+        if (textMatches && textMatches.length > 0) {
+          text = textMatches.join(' ').trim();
+          if (text.length > 50) { // Minimum viable text
+            extractionMethod = "raw-text";
+            console.log(`Extracted ${text.length} characters using raw text method`);
+          } else {
+            text = "";
+          }
+        }
+      } catch (rawError) {
+        console.error("Raw text extraction error:", rawError);
+      }
+    }
+      
+    // If still no text, return helpful error
+    if (!text || text.length < 10) {
+      console.log("All extraction methods failed");
+      return res.status(400).json({
+        error: "Unable to extract text from this PDF. This could be a scanned document, image-based PDF, or password-protected file. Please try a different document or convert to a text-based format.",
+      });
+    }
+
+    console.log(`Successfully extracted text using ${extractionMethod}: ${text.length} characters`);
 
     // truncate and flag if needed
     let truncated = false;
